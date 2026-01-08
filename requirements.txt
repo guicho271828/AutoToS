@@ -1,4 +1,4 @@
-openai==1.93.1
+mellea
 python-dotenv
 inflect
 datetime

@@ -8,8 +8,12 @@ from datetime import datetime
 
 from utils import experiment_utils
 
-from dotenv import load_dotenv
-from openai import OpenAI
+from mellea import MelleaSession, start_session
+from mellea.backends.ollama import OllamaModelBackend
+from mellea.backends.types import ModelOption
+from mellea.stdlib.base import CBlock, ChatContext
+# from mellea.stdlib.requirement import Requirement, simple_validate
+
 
 
 
@@ -17,16 +21,15 @@ class DomainTestBase(ABC):
 
     def __init__(self, model_name, log_folder):
         # make sure you have a .env file under genai root with
-        load_dotenv()
         self.use_complex_validator = False
         sysmsg = """You are Python coding assistant. Help me generate my Python functions based on the task descriptions. Please always generate only a single function and keep all imports in it. If you need to define any additional functions, define them as inner functions. Do not generate examples of how to invoke the function. Please do not add any print statements outside the function. Provide the complete function and do not include any ellipsis notation."""
         self.model_id = model_name
 
         # mellea
-        self.client = OpenAI(api_key=os.getenv("API_KEY"), base_url=os.getenv("API_BASE_URL","http://0.0.0.0:4000"))
-        self.messages = [
-                {"role": "system", "content": sysmsg}
-                ]
+        self.session : MelleaSession = start_session(backend_name="ollama",
+                                                     ctx=ChatContext(),
+                                                     model_id=model_name,
+                                                     model_options={ModelOption.system_prompt:sysmsg})
 
         self.max_goal_iterations = 10
         self.max_succ_iterations = 10
@@ -51,16 +54,10 @@ class DomainTestBase(ABC):
     def prompt_model(self, prompt):
 
         # mellea
-        self.messages.append({"role": "user", "content": prompt})
-
-        response = self.client.chat.completions.create(
-            model=self.model_id,
-            messages=self.messages
-            )
-        self.num_input_tokens += response.usage.prompt_tokens
-        self.num_output_tokens += response.usage.completion_tokens
-        resp = response.choices[0].message.content
-        self.messages.append({"role": "assistant", "content": resp})
+        msg = self.session.chat(prompt)
+        # self.num_input_tokens += response.usage.prompt_tokens
+        # self.num_output_tokens += response.usage.completion_tokens
+        resp = msg.content
 
         return resp
 
