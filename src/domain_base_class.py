@@ -29,7 +29,7 @@ class DomainTestBase(ABC):
         self.session : MelleaSession = start_session(backend_name="ollama",
                                                      ctx=ChatContext(),
                                                      model_id=model_name,
-                                                     model_options={ModelOption.system_prompt:sysmsg})
+                                                     model_options={ModelOption.SYSTEM_PROMPT:sysmsg})
 
         self.max_goal_iterations = 10
         self.max_succ_iterations = 10
@@ -49,11 +49,12 @@ class DomainTestBase(ABC):
         self.num_output_tokens = 0
 
     def get_client(self):
-        return self.client
+        return self.session
 
     def prompt_model(self, prompt):
 
         # mellea
+        print(self.session.ctx.as_list())
         msg = self.session.chat(prompt)
         # self.num_input_tokens += response.usage.prompt_tokens
         # self.num_output_tokens += response.usage.completion_tokens
@@ -64,7 +65,8 @@ class DomainTestBase(ABC):
 
     def log_all_messages(self):
         logging.info("======================= Model messages =======================")
-        logging.info(self.messages)
+        for stuff in self.session.ctx.as_list():
+            logging.info(stuff)
         logging.info("======================= Model messages end =======================")
         logging.info(f"Number of tokens, input: {self.num_input_tokens}, output: {self.num_output_tokens}")
 
