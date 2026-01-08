@@ -14,7 +14,7 @@ from openai import OpenAI
 
 
 class DomainTestBase(ABC):
-    
+
     def __init__(self, model_name, log_folder):
         # make sure you have a .env file under genai root with
         load_dotenv()
@@ -22,6 +22,7 @@ class DomainTestBase(ABC):
         sysmsg = """You are Python coding assistant. Help me generate my Python functions based on the task descriptions. Please always generate only a single function and keep all imports in it. If you need to define any additional functions, define them as inner functions. Do not generate examples of how to invoke the function. Please do not add any print statements outside the function. Provide the complete function and do not include any ellipsis notation."""
         self.model_id = model_name
 
+        # mellea
         self.client = OpenAI(api_key=os.getenv("API_KEY"), base_url=os.getenv("API_BASE_URL","http://0.0.0.0:4000"))
         self.messages = [
                 {"role": "system", "content": sysmsg}
@@ -46,21 +47,22 @@ class DomainTestBase(ABC):
 
     def get_client(self):
         return self.client
-    
+
     def prompt_model(self, prompt):
 
+        # mellea
         self.messages.append({"role": "user", "content": prompt})
 
         response = self.client.chat.completions.create(
             model=self.model_id,
             messages=self.messages
-            )        
+            )
         self.num_input_tokens += response.usage.prompt_tokens
         self.num_output_tokens += response.usage.completion_tokens
         resp = response.choices[0].message.content
         self.messages.append({"role": "assistant", "content": resp})
 
-        return resp 
+        return resp
 
 
     def log_all_messages(self):
@@ -95,7 +97,7 @@ class DomainTestBase(ABC):
             return res
             # return str(state)
         return " ".join(sorted(list([str(s) for s in state])))
-    
+
     def set_use_complex_validator(self):
         self.use_complex_validator = True
 
@@ -103,7 +105,7 @@ class DomainTestBase(ABC):
         if self.use_complex_validator:
             return self.validate_transition_complex(s, t)
         return True, ""
-    
+
     @abstractmethod
     def test_successor_soundness(self, llm_successor_states, llm_is_goal):
         pass
@@ -131,7 +133,7 @@ class DomainTestBase(ABC):
     @abstractmethod
     def validate_transition_complex(self, s, t):
         pass
-    
+
     def run_tests(self, llm_successor_states, llm_is_goal, test_type):
         old_stdout = sys.stdout
         new_stdout = io.StringIO()
@@ -159,7 +161,7 @@ class DomainTestBase(ABC):
         feedback = new_stdout.getvalue() + feedback + res
         sys.stdout = old_stdout
         return feedback
-    
+
 
     def obtain_successor_function(self):
         self.succ_iterations = 0
@@ -177,7 +179,7 @@ class DomainTestBase(ABC):
             if self.llm_successor_states:
                 logging.info("========= Extracted code: =========")
                 logging.info(successor_code)
-                logging.info("===================================") 
+                logging.info("===================================")
                 break
 
             if response_feedback:
@@ -208,7 +210,7 @@ class DomainTestBase(ABC):
             if self.llm_is_goal:
                 logging.info("========= Extracted code: =========")
                 logging.info(goal_code)
-                logging.info("===================================") 
+                logging.info("===================================")
             else:
 
                 if response_feedback:
@@ -232,7 +234,7 @@ class DomainTestBase(ABC):
                 return False
 
             logging.info(f"Goal Iteration {self.goal_iterations} - Goal Soundness Test")
-        
+
 
     def successor_completeness_soundness_tests(self):
         logging.info(f"Soundness test")
@@ -252,7 +254,7 @@ class DomainTestBase(ABC):
                 if self.llm_successor_states:
                     logging.info("========= Extracted code: =========")
                     logging.info(successor_code)
-                    logging.info("===================================") 
+                    logging.info("===================================")
                 else:
                     if response_feedback:
                         # Syntax error
@@ -272,7 +274,7 @@ class DomainTestBase(ABC):
                 if "Please fix the goal test function." in feedback:
                     logging.info(f"Successor Iteration {self.succ_iterations} - Restarting function extraction")
                     self.perform_goal_iteration(feedback)
-                
+
                 self.succ_iterations += 1
                 if self.succ_iterations >= self.max_succ_iterations:
                     logging.info("Maximum iterations reached for completeness test. Process stopped.")
@@ -285,7 +287,7 @@ class DomainTestBase(ABC):
             if feedback == "":
                 logging.info("Successor Completeness Test Passed")
                 return True
-            
+
             self.succ_iterations += 1
             if self.succ_iterations >= self.max_succ_iterations:
                 logging.info("Maximum iterations reached for completeness test. Process stopped.")
